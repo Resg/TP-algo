@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/DZ.dir/task-1.cpp.o  -o DZ 
