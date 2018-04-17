@@ -65,13 +65,6 @@ void merge(T *array,size_t beg_i1, size_t mid, size_t end_i2, functor &func) { /
             ++left_index;
         }
     }
-    if (left_index != mid) {
-        while (left_index < mid) {
-            result[index] = array[left_index];
-            ++index;
-            ++left_index;
-        }
-    }
     else if (right_index != end_i2) {
         while (right_index < end_i2) {
             result[index] = array[right_index];
