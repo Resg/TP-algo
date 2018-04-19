@@ -5,129 +5,170 @@
 
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
-bool* init_bool_array(const size_t &size);
+template <class T>
 
-class StringHashTable {
+struct default_hash {
+    size_t  operator() (const T &value) {
+        std::hash<T> hash_fn;
+        return hash_fn(value);
+    }
+};
+
+template <class T, class Hash = default_hash<T>>
+
+class HashTable {
 private:
     const size_t beg_size = 8;
-    const size_t hash_cff = 5;
-    std::string *str_array;
+    T *array;
     bool *is_deleted;
     size_t size;
     size_t allocated;
-    size_t hash(const std::string &value);
+    Hash hash_fn;
     void rehash();
     float load_factor();
+    bool* init_bool_array(const size_t &size);
+    void init();
 public:
-    StringHashTable();
-    StringHashTable(const StringHashTable &);
-    StringHashTable(StringHashTable &&) noexcept ;
-    StringHashTable& operator = (const StringHashTable &);
-    StringHashTable& operator = (StringHashTable &&) noexcept ;
+    HashTable();
+    HashTable(const HashTable &);
+    HashTable(HashTable &&) noexcept ;
+    HashTable& operator = (const HashTable &);
+    HashTable& operator = (HashTable &&) noexcept ;
     bool Add(const std::string &);
     bool Remove(const std::string &);
     bool Has(const std::string &);
-    ~StringHashTable();
+    ~HashTable();
 };
 
-StringHashTable::StringHashTable() {
-    str_array = new std::string[beg_size];
+template <class T, class Hash>
+
+HashTable<T, Hash>::HashTable() {
+    init();
+}
+
+template <class T, class Hash>
+
+HashTable<T, Hash>::HashTable(const HashTable &other) {
+    size = other.size;
+    allocated = other.allocated;
+    array = new std::string[allocated];
+    for (int i = 0; i < allocated; ++i)
+        array[i] = other.array[i];
+    is_deleted = init_bool_array(allocated);
+    for (int i = 0; i < allocated; ++i)
+        is_deleted[i] = other.is_deleted[i];
+}
+
+template <class T, class Hash>
+
+HashTable<T, Hash>::HashTable(HashTable &&other) noexcept {
+    size = other.size;
+    allocated = other.allocated;
+    array = other.array;
+    is_deleted = other.is_deleted;
+    other.array = nullptr;
+    other.is_deleted = nullptr;
+    other.size = 0;
+    other.allocated = 0;
+}
+
+template <class T, class Hash>
+
+void HashTable<T, Hash>::init() {
+    array = new std::string[beg_size];
     is_deleted = init_bool_array(beg_size);
     allocated = beg_size;
     size = 0;
 }
 
-StringHashTable::StringHashTable(const StringHashTable &other) {
+template <class T, class Hash>
+
+HashTable<T, Hash>& HashTable<T, Hash>::operator=(const HashTable &other) {
     size = other.size;
     allocated = other.allocated;
-    str_array = new std::string[allocated];
+    array = new std::string[allocated];
     for (int i = 0; i < allocated; ++i)
-        str_array[i] = other.str_array[i];
+        array[i] = other.array[i];
     is_deleted = init_bool_array(allocated);
     for (int i = 0; i < allocated; ++i)
         is_deleted[i] = other.is_deleted[i];
 }
 
-StringHashTable::StringHashTable(StringHashTable &&other) noexcept {
-    size = other.size;
-    allocated = other.allocated;
-    str_array = other.str_array;
-    is_deleted = other.is_deleted;
-    other.str_array = nullptr;
-    other.is_deleted = nullptr;
-    other.size = 0;
-    other.allocated = 0;
-}
+template <class T, class Hash>
 
-StringHashTable& StringHashTable::operator=(const StringHashTable &other) {
-    size = other.size;
-    allocated = other.allocated;
-    str_array = new std::string[allocated];
-    for (int i = 0; i < allocated; ++i)
-        str_array[i] = other.str_array[i];
-    is_deleted = init_bool_array(allocated);
-    for (int i = 0; i < allocated; ++i)
-        is_deleted[i] = other.is_deleted[i];
-}
-
-StringHashTable& StringHashTable::operator=(StringHashTable &&other) noexcept{
+HashTable<T, Hash>& HashTable<T, Hash>::operator=(HashTable<T, Hash> &&other) noexcept{
     *this = other;
-    other.str_array = nullptr;
+    other.array = nullptr;
     other.is_deleted = nullptr;
     other.size = 0;
     other.allocated = 0;
 }
 
-bool StringHashTable::Add(const std::string &value) {
+template <class T, class Hash>
+
+bool HashTable<T, Hash>::Add(const std::string &value) {
+    if (!allocated)
+        init();
     if (Has(value))
         return false;
-    size_t str_hash = hash(value);
+    size_t hash = hash_fn(value) % allocated;
     size_t shift = 1;
-    while (!str_array[str_hash].empty()) {
-        str_hash += shift + 1;
-        str_hash %= allocated;
+    while (!array[hash].empty()) {
+        hash += shift + 1;
+        hash %= allocated;
         ++shift;
     }
-    str_array[str_hash] = value;
-    is_deleted[str_hash] = false;
+    array[hash] = value;
+    is_deleted[hash] = false;
     ++size;
     if (load_factor() >= 0.75)
         rehash();
     return true;
 }
 
-bool StringHashTable::Has(const std::string &value) {
-    size_t str_hash = hash(value);
+template <class T, class Hash>
+
+bool HashTable<T, Hash>::Has(const std::string &value) {
+    if (!allocated)
+        init();
+    size_t hash = hash_fn(value) % allocated;
     size_t shift = 1;
-    while (str_array[str_hash] != value) {
-        if (str_array[str_hash].empty() && !is_deleted[str_hash])
+    while (array[hash] != value) {
+        if (array[hash].empty() && !is_deleted[hash])
             return false;
-        str_hash += shift + 1;
-        str_hash %= allocated;
+        hash += shift + 1;
+        hash %= allocated;
         ++shift;
     }
     return true;
 }
 
-bool StringHashTable::Remove(const std::string &value) {
-    size_t str_hash = hash(value);
+template <class T, class Hash>
+
+bool HashTable<T, Hash>::Remove(const std::string &value) {
+    if (!allocated)
+        init();
+    size_t hash = hash_fn(value) % allocated;
     size_t shift = 1;
-    while (str_array[str_hash] != value) {
-        if (str_array[str_hash].empty() && !is_deleted[str_hash])
+    while (array[hash] != value) {
+        if (array[hash].empty() && !is_deleted[hash])
             return false;
-        str_hash += shift + 1;
-        str_hash %= allocated;
+        hash += shift + 1;
+        hash %= allocated;
         ++shift;
     }
-    str_array[str_hash].clear();
-    is_deleted[str_hash] = true;
+    array[hash].clear();
+    is_deleted[hash] = true;
     return true;
 }
 
-void StringHashTable::rehash() {
-    std::string *old_array = str_array;
-    str_array = new std::string[2 * allocated];
+template <class T, class Hash>
+
+void HashTable<T, Hash>::rehash() {
+    std::string *old_array = array;
+    array = new std::string[2 * allocated];
     delete[] is_deleted;
     is_deleted = init_bool_array(2 * allocated);
     allocated *= 2;
@@ -141,33 +182,42 @@ void StringHashTable::rehash() {
     delete[] old_array;
 }
 
-float StringHashTable::load_factor() {
+template <class T, class Hash>
+
+float HashTable<T, Hash>::load_factor() {
     return (float) size / allocated;
 }
-
-size_t StringHashTable::hash(const std::string &value) {
-    const size_t n = value.length();
-    if (!n)
-        return 0;
-    size_t result = 0;
-    size_t i = n - 1;
-    while (i > 0) {
-        result += (size_t)value[i];
-        result *= hash_cff;
-        result = result % allocated;
-        --i;
+struct string_hash {
+public:
+    string_hash() {
     }
-    result += (size_t)value[0];
-    result = result % allocated;
-    return result;
-}
+    size_t operator()(const std::string &value) {
+        const size_t hash_cff = 5;
+        const size_t n = value.length();
+        if (!n)
+            return 0;
+        size_t result = 0;
+        size_t i = n - 1;
+        while (i > 0) {
+            result += (size_t) value[i];
+            result *= hash_cff;
+            --i;
+        }
+        result += (size_t) value[0];
+        return result;
+    }
+};
 
-StringHashTable::~StringHashTable() {
-    delete[] str_array;
+template <class T, class Hash>
+
+HashTable<T, Hash>::~HashTable() {
+    delete[] array;
     delete[] is_deleted;
 }
 
-bool* init_bool_array(const size_t &size) {
+template <class T, class Hash>
+
+bool* HashTable<T, Hash>::init_bool_array(const size_t &size) {
     assert(size > 0);
     bool *array = new bool[size];
     for (int i = 0 ; i < size ; ++i)
@@ -177,7 +227,7 @@ bool* init_bool_array(const size_t &size) {
 
 int main()
 {
-    StringHashTable table;
+    HashTable<std::string, string_hash> table;
     char cmd;
     std::string arg;
     while (std::cin >> cmd >> arg) {
