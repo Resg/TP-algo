@@ -39,6 +39,7 @@ public:
     bool Add(const std::string &);
     bool Remove(const std::string &);
     bool Has(const std::string &);
+    void Clear();
     ~HashTable();
 };
 
@@ -86,24 +87,17 @@ void HashTable<T, Hash>::init() {
 template <class T, class Hash>
 
 HashTable<T, Hash>& HashTable<T, Hash>::operator=(const HashTable &other) {
-    size = other.size;
-    allocated = other.allocated;
-    array = new std::string[allocated];
-    for (int i = 0; i < allocated; ++i)
-        array[i] = other.array[i];
-    is_deleted = init_bool_array(allocated);
-    for (int i = 0; i < allocated; ++i)
-        is_deleted[i] = other.is_deleted[i];
+    auto table = HashTable<T, Hash>(other);
+    *this = table;
+    return *this;
 }
 
 template <class T, class Hash>
 
 HashTable<T, Hash>& HashTable<T, Hash>::operator=(HashTable<T, Hash> &&other) noexcept{
-    *this = other;
-    other.array = nullptr;
-    other.is_deleted = nullptr;
-    other.size = 0;
-    other.allocated = 0;
+    auto table = HashTable<T, Hash>(std::move(other));
+    *this = table;
+    return *this;
 }
 
 template <class T, class Hash>
@@ -210,9 +204,17 @@ public:
 
 template <class T, class Hash>
 
-HashTable<T, Hash>::~HashTable() {
+void HashTable<T, Hash>::Clear() {
+    size = 0;
+    allocated = 0;
     delete[] array;
     delete[] is_deleted;
+}
+
+template <class T, class Hash>
+
+HashTable<T, Hash>::~HashTable() {
+    Clear();
 }
 
 template <class T, class Hash>
