@@ -29,7 +29,7 @@ private:
         Node* parent;
         Node* right;
         Node* left;
-        bool IsNill();
+        bool IsNil();
     };
     Node *head;
     size_t num_of_elements;
@@ -180,13 +180,13 @@ void BinarySearchTree<T, Comparator>::Remove(const T &elem) {
     --num_of_elements;
 }
 
-template <class T, class Comnparator>
+template <class T, class Comparator>
 
-void BinarySearchTree<T, Comnparator>::PostOrder() {
+void BinarySearchTree<T, Comparator>::PostOrder() {
     Node* tmp = head;
     std::set<Node*> visited;
     for (int i =0; i < num_of_elements; ++i) {
-        while (!tmp->IsNill()) {
+        while (!tmp->IsNil()) {
             if (tmp->left && visited.find(tmp->left) == visited.end())
                 tmp = tmp->left;
             else if ((!tmp->left || visited.find(tmp->left) != visited.end()) &&
@@ -208,7 +208,7 @@ template <class T, class Comparator>
 void BinarySearchTree<T, Comparator>::Clear() {
     Node* tmp = head;
     while (num_of_elements) {
-        while (!tmp->IsNill()) {
+        while (!tmp->IsNil()) {
             if (tmp->left)
                 tmp = tmp->left;
             else if (!tmp->left && tmp->right)
@@ -235,7 +235,7 @@ BinarySearchTree<T, Comparator>::~BinarySearchTree() {
 
 template <class T, class Comparator>
 
-bool BinarySearchTree<T, Comparator>::Node::IsNill() {
+bool BinarySearchTree<T, Comparator>::Node::IsNil() {
     if (!left && !right)
         return true;
     return false;
@@ -252,6 +252,6 @@ int main()
         std::cin >> operand;
         tree.Add(operand);
     }
-    tree.PostOrder();
+    //tree.PostOrder();
     return 0;
 }
