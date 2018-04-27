@@ -36,8 +36,13 @@ private:
     void find_head(Node*);
     template <class Tree>
     friend size_t GetDepth(const Tree&);
+    Node* CopyNode(Node *, Node *);
 public:
     Treap();
+    Treap(const Treap &);
+    Treap(Treap &&) noexcept;
+    Treap& operator = (const Treap &);
+    Treap& operator = (Treap &&) noexcept;
     void Insert(const Key&, const Prior&);
     void Remove(const Key&);
     void Clear();
@@ -55,6 +60,60 @@ template <class Key, class Prior, class KeyCompr, class PriorCompr>
 Treap<Key, Prior, KeyCompr, PriorCompr>::Treap() {
     num_of_elements = 0;
     head = nullptr;
+}
+
+template <class Key, class Prior, class KeyCompr, class PriorCompr>
+
+Treap<Key, Prior, KeyCompr, PriorCompr>::Treap(const Treap<Key, Prior, KeyCompr, PriorCompr> &obj) {
+    num_of_elements = obj.num_of_elements;
+    if (num_of_elements)
+        head = CopyNode(obj.head, head);
+}
+
+template <class Key, class Prior, class KeyCompr, class PriorCompr>
+
+Treap<Key, Prior, KeyCompr, PriorCompr>::Treap(Treap<Key, Prior, KeyCompr, PriorCompr> &&obj) noexcept {
+    num_of_elements = obj.num_of_elements;
+    head = obj.head;
+    obj.head = nullptr;
+    obj.num_of_elements = 0;
+}
+
+template <class Key, class Prior, class KeyCompr, class PriorCompr>
+
+typename Treap<Key, Prior, KeyCompr, PriorCompr>::Node* Treap<Key, Prior, KeyCompr, PriorCompr>::CopyNode(Node *from, Node *to) {
+    to = new Node;
+    to->key = from->key;
+    to->prior = from->prior;
+    to->left = nullptr;
+    to->right = nullptr;
+    if (from->left) {
+        to->left = CopyNode(from->left, to->left);
+        to->left->parent = to;
+    }
+    if (from->right) {
+        to->right = CopyNode(from->right, to->right);
+        to->right->parent = to;
+    }
+    return to;
+}
+
+template <class Key, class Prior, class KeyCompr, class PriorCompr>
+
+Treap<Key, Prior, KeyCompr, PriorCompr>&
+Treap<Key, Prior, KeyCompr, PriorCompr>::operator = (const Treap &obj) {
+    Treap<Key, Prior, KeyCompr, PriorCompr>* copy = new Treap<Key, Prior, KeyCompr, PriorCompr>(obj);
+    *this = *copy;
+    return *this;
+}
+
+template <class Key, class Prior, class KeyCompr, class PriorCompr>
+
+Treap<Key, Prior, KeyCompr, PriorCompr>&
+Treap<Key, Prior, KeyCompr, PriorCompr>::operator = (Treap &&obj) noexcept{
+    Treap<Key, Prior, KeyCompr, PriorCompr>* copy = new Treap<Key, Prior, KeyCompr, PriorCompr>(std::move(obj));
+    *this = *copy;
+    return *this;
 }
 
 template <class Key, class Prior, class KeyCompr, class PriorCompr>
