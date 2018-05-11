@@ -11,6 +11,10 @@
 #include <cassert>
 #include <set>
 
+template <class Tree>
+
+void PostOrder(const Tree &);
+
 template <class T>
 
 struct IsLess {
@@ -35,6 +39,8 @@ private:
     size_t num_of_elements;
     Comparator compr;
     Node* CopyNode(Node*, Node*);
+    template <class Tree>
+    friend void PostOrder(const Tree&);
 public:
     BinarySearchTree();
     BinarySearchTree(const BinarySearchTree &);
@@ -43,7 +49,6 @@ public:
     BinarySearchTree& operator = (BinarySearchTree &&) noexcept ;
     void Add(const T &);
     void Remove(const T &);
-    void PostOrder();
     void Clear();
     size_t size() { return num_of_elements; };
     ~BinarySearchTree();
@@ -180,12 +185,12 @@ void BinarySearchTree<T, Comparator>::Remove(const T &elem) {
     --num_of_elements;
 }
 
-template <class T, class Comparator>
+template <class Tree>
 
-void BinarySearchTree<T, Comparator>::PostOrder() {
-    Node* tmp = head;
-    std::set<Node*> visited;
-    for (int i =0; i < num_of_elements; ++i) {
+void PostOrder(const Tree& obj) {
+    typename Tree::Node* tmp = obj.head;
+    std::set<typename Tree::Node*> visited;
+    for (int i =0; i < obj.num_of_elements; ++i) {
         while (!tmp->IsNil()) {
             if (tmp->left && visited.find(tmp->left) == visited.end())
                 tmp = tmp->left;
@@ -252,6 +257,6 @@ int main()
         std::cin >> operand;
         tree.Add(operand);
     }
-    //tree.PostOrder();
+    PostOrder(tree);
     return 0;
 }
