@@ -14,6 +14,7 @@ private:
     size_t temp_capacity;
     size_t num_of_elements;
     void resize();
+    void init();
 public:
     Queue();
     Queue(const Queue&);
@@ -24,15 +25,12 @@ public:
     void push_back(const int&);
     int pop_front();
     size_t size();
+    void Clear();
     ~Queue();
 };
 
 Queue::Queue() {
-    num_of_elements = 0;
-    temp_capacity = beg_capacity;
-    buffer = new int[temp_capacity];
-    head_index = 0;
-    tail_index =0;
+    init();
 }
 
 Queue::Queue(const Queue &other) {
@@ -58,7 +56,18 @@ Queue::Queue(Queue &&other) noexcept{
     other.num_of_elements = 0;
 }
 
+Queue::init() {
+    num_of_elements = 0;
+    temp_capacity = beg_capacity;
+    buffer = new int[temp_capacity];
+    head_index = 0;
+    tail_index =0;
+}
+
 Queue& Queue::operator=(const Queue &other) {
+    if (this == &other)
+        return *this;
+    Clear();
     num_of_elements = other.num_of_elements;
     temp_capacity = other.temp_capacity;
     head_index = other.head_index;
@@ -70,6 +79,9 @@ Queue& Queue::operator=(const Queue &other) {
 }
 
 Queue& Queue::operator=(Queue &&other) noexcept{
+    Clear();
+    if (this == &other)
+        return *this;
     num_of_elements = other.num_of_elements;
     temp_capacity = other.temp_capacity;
     head_index = other.head_index;
@@ -84,6 +96,8 @@ Queue& Queue::operator=(Queue &&other) noexcept{
 }
 
 void Queue::push_back(const int &elem) {
+    if (!temp_capacity)
+        init();
     if (num_of_elements == 0) { //при добавлении первого элемента head_index равен tail_index
         buffer[head_index % temp_capacity] = elem;
         ++num_of_elements;
@@ -153,9 +167,15 @@ size_t Queue::size() {
     return num_of_elements;
 }
 
-Queue::~Queue() {
-    if (num_of_elements > 0)
+void Queue::Clear() {
+    if (temp_capacity > 0)
         delete []buffer;
+    num_of_elements = 0;
+    temp_capacity = 0;
+}
+
+Queue::~Queue() {
+    Clear();
 }
 
 

@@ -24,6 +24,7 @@ private:
     void resize();
     void siftup(const size_t&);
     void siftdown(const size_t&);
+    void init();
 public:
     Heap();
     Heap(const Heap&);
@@ -32,6 +33,7 @@ public:
     Heap& operator = (Heap&&);
     void push(const Type&);
     Type pop();
+    void Clear();
     bool empty();
     template<class U>
     friend std::ostream& operator << (std::ostream &, const Heap<U> &);
@@ -41,9 +43,7 @@ public:
 template <typename Type>
 
 Heap<Type>::Heap() {
-    buffer = new Type[beg_capacity];
-    temp_capacity = beg_capacity;
-    num_of_elements = 0;
+    init();
 }
 
 template <typename Type>
@@ -69,7 +69,18 @@ Heap<Type>::Heap(Heap &&obj) {
 
 template <typename Type>
 
+Heap<Type>::init() {
+    buffer = new Type[beg_capacity];
+    temp_capacity = beg_capacity;
+    num_of_elements = 0;
+}
+
+template<typename Type>
+
 Heap<Type>& Heap<Type>::operator = (const Heap &obj) {
+    if (this == &obj)
+        return *this;
+    Clear();
     temp_capacity = obj.temp_capacity;
     num_of_elements = obj.num_of_elements;
     buffer = new Type[temp_capacity];
@@ -81,6 +92,9 @@ Heap<Type>& Heap<Type>::operator = (const Heap &obj) {
 template<typename Type>
 
 Heap<Type> &Heap<Type>::operator = (Heap &&obj) {
+    Clear();
+    if (this == &obj)
+        return *this;
     temp_capacity = obj.temp_capacity;
     num_of_elements = obj.num_of_elements;
     buffer = obj.buffer;
@@ -117,6 +131,8 @@ void Heap<Type>::siftup(const size_t &index) { //просеивание элем
 template<typename Type>
 
 void Heap<Type>::push(const Type &elem){
+    if (!temp_capacity)
+        init();
     if (num_of_elements == temp_capacity)
         resize();
     buffer[num_of_elements] = elem;
@@ -169,6 +185,13 @@ bool Heap<Type>::empty() {
 template<typename Type>
 
 Heap<Type>::~Heap() {
+    Clear();
+}
+
+template<typename Type>
+
+void Heap<Type>::Clear() {
+    num_of_elements = 0;
     delete[] buffer;
 }
 

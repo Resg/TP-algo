@@ -81,16 +81,25 @@ BinarySearchTree<T, Comparator>::BinarySearchTree(BinarySearchTree &&obj) noexce
 template <class T, class Comparator>
 
 BinarySearchTree<T, Comparator>& BinarySearchTree<T, Comparator>::operator=(const BinarySearchTree &obj) {
-    BinarySearchTree<T, Comparator>* copy = new BinarySearchTree<T, Comparator>(obj);
-    *this = *copy;
+    if (this == &obj)
+        return *this;
+    this->Clear();
+    num_of_elements = obj.num_of_elements;
+    if (num_of_elements)
+        head = CopyNode(obj.head, head);
     return *this;
 }
 
 template <class T, class Comparator>
 
 BinarySearchTree<T, Comparator>& BinarySearchTree<T, Comparator>::operator=(BinarySearchTree && obj) noexcept {
-    BinarySearchTree<T, Comparator>* copy = new BinarySearchTree<T, Comparator>(std::move(obj));
-    *this = *copy;
+    this->Clear();
+    if (this == &obj)
+        return *this;
+    num_of_elements = obj.num_of_elements;
+    head = obj.head;
+    obj.head = nullptr;
+    obj.num_of_elements = 0;
     return *this;
 }
 
@@ -249,6 +258,7 @@ bool BinarySearchTree<T, Comparator>::Node::IsNil() {
 int main()
 {
     BinarySearchTree<int> tree;
+    BinarySearchTree<int> tree1;
     size_t num_of_operands;
     std::cin >> num_of_operands;
     assert(num_of_operands <= 10000);
@@ -256,7 +266,9 @@ int main()
     for (int i = 0; i < num_of_operands; ++i) {
         std::cin >> operand;
         tree.Add(operand);
+        tree1.Add(operand);
     }
-    PostOrder(tree);
+    tree1 = std::move(tree);
+    PostOrder(tree1);
     return 0;
 }

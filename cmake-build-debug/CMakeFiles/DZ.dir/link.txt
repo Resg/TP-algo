@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/DZ.dir/module_3/task-1/Arc.cpp.o CMakeFiles/DZ.dir/main.cpp.o  -o DZ 

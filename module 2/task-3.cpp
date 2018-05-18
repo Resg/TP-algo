@@ -102,8 +102,12 @@ template <class Key, class Prior, class KeyCompr, class PriorCompr>
 
 Treap<Key, Prior, KeyCompr, PriorCompr>&
 Treap<Key, Prior, KeyCompr, PriorCompr>::operator = (const Treap &obj) {
-    Treap<Key, Prior, KeyCompr, PriorCompr>* copy = new Treap<Key, Prior, KeyCompr, PriorCompr>(obj);
-    *this = *copy;
+    if (this == &obj)
+        return *this;
+    this->Clear();
+    num_of_elements = obj.num_of_elements;
+    if (num_of_elements)
+        head = CopyNode(obj.head, head);
     return *this;
 }
 
@@ -111,8 +115,13 @@ template <class Key, class Prior, class KeyCompr, class PriorCompr>
 
 Treap<Key, Prior, KeyCompr, PriorCompr>&
 Treap<Key, Prior, KeyCompr, PriorCompr>::operator = (Treap &&obj) noexcept{
-    Treap<Key, Prior, KeyCompr, PriorCompr>* copy = new Treap<Key, Prior, KeyCompr, PriorCompr>(std::move(obj));
-    *this = *copy;
+    this->Clear();
+    if (this == &obj)
+        return *this;
+    num_of_elements = obj.num_of_elements;
+    head = obj.head;
+    obj.head = nullptr;
+    obj.num_of_elements = 0;
     return *this;
 }
 
@@ -377,16 +386,25 @@ BinarySearchTree<T, Comparator>::BinarySearchTree(BinarySearchTree &&obj) noexce
 template <class T, class Comparator>
 
 BinarySearchTree<T, Comparator>& BinarySearchTree<T, Comparator>::operator=(const BinarySearchTree &obj) {
-    BinarySearchTree<T, Comparator>* copy = new BinarySearchTree<T, Comparator>(obj);
-    *this = *copy;
+    if (this == &obj)
+        return *this;
+    this->Clear();
+    num_of_elements = obj.num_of_elements;
+    if (num_of_elements)
+        head = CopyNode(obj.head, head);
     return *this;
 }
 
 template <class T, class Comparator>
 
 BinarySearchTree<T, Comparator>& BinarySearchTree<T, Comparator>::operator=(BinarySearchTree && obj) noexcept {
-    BinarySearchTree<T, Comparator>* copy = new BinarySearchTree<T, Comparator>(std::move(obj));
-    *this = *copy;
+    this->Clear();
+    if (this == &obj)
+        return *this;
+    num_of_elements = obj.num_of_elements;
+    head = obj.head;
+    obj.head = nullptr;
+    obj.num_of_elements = 0;
     return *this;
 }
 
