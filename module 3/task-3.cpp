@@ -12,6 +12,7 @@
 #include <cstring>
 #include <functional>
 #include <vector>
+#include <time.h>
 
 template<typename Type>
 
@@ -29,13 +30,14 @@ private:
 public:
     Heap();
     Heap(const Heap&);
-    Heap(Heap&&);
+    Heap(Heap&&) noexcept ;
     Heap& operator = (const Heap&);
-    Heap& operator = (Heap&&);
+    Heap& operator = (Heap&&) noexcept ;
     void push(const Type&);
     Type pop();
     template <class Pred>
-    void delete_by_key(int key, Pred func);
+    void delete_by_key(Type key, Pred &func);
+    size_t size();
     void Clear();
     bool empty();
     template<class U>
@@ -61,7 +63,7 @@ Heap<Type>::Heap(const Heap &obj) {
 
 template<typename Type>
 
-Heap<Type>::Heap(Heap &&obj) {
+Heap<Type>::Heap(Heap &&obj) noexcept {
     temp_capacity = obj.temp_capacity;
     num_of_elements = obj.num_of_elements;
     buffer = obj.buffer;
@@ -76,6 +78,12 @@ void Heap<Type>::init() {
     buffer = new Type[beg_capacity];
     temp_capacity = beg_capacity;
     num_of_elements = 0;
+}
+
+template <typename Type>
+
+size_t Heap<Type>::size() {
+    return num_of_elements;
 }
 
 template<typename Type>
@@ -94,7 +102,7 @@ Heap<Type>& Heap<Type>::operator = (const Heap &obj) {
 
 template<typename Type>
 
-Heap<Type> &Heap<Type>::operator = (Heap &&obj) {
+Heap<Type> &Heap<Type>::operator = (Heap &&obj) noexcept {
     Clear();
     if (this == &obj)
         return *this;
@@ -120,12 +128,18 @@ void Heap<Type>::resize(){ //при переполнении буфера
 
 template <typename Type>
 template <class Pred>
-void Heap<Type>::delete_by_key(Type key, Pred pred) {
-    if (!temp_capacity)
-        return;
-    for (int i = 0; i < temp_capacity; ++i) {
-        if (pred(buffer[i], key)) {
 
+void Heap<Type>::delete_by_key(Type key, Pred &pred) {
+    for (int i = 0; i < num_of_elements; ++i) {
+        if (pred(buffer[i], key)) {
+            buffer[i].first = INT32_MAX;
+            buffer[i].second = INT32_MAX;
+            std::swap(buffer[num_of_elements - 1], buffer[i]);
+            num_of_elements--;
+            siftdown(i);
+            buffer[num_of_elements].first = 0;
+            buffer[num_of_elements].second = 0;
+            return;
         }
     }
 }
@@ -161,20 +175,18 @@ template<typename Type>
 void Heap<Type>::siftdown(const size_t &index) { //просеивание элемента вниз
     if (num_of_elements <= 1)
         return;
-    size_t i = index;
-    size_t left, right, smallest;
-    while (i < num_of_elements) {
+    int i = index;
+    int left, right;
+    while (2 * i + 1 < num_of_elements) {
         left = 2 * i + 1;
         right = 2 * i + 2;
-        smallest = i;
-        if (left < num_of_elements && buffer[left] < buffer[smallest])
-            smallest = left;
-        if (right < num_of_elements && buffer[right] < buffer[smallest])
-            smallest = right;
-        if (smallest == i)
+        int j = left;
+        if (right < num_of_elements && buffer[right] < buffer[left])
+            j = right;
+        if (buffer[i] <= buffer[j])
             break;
-        std::swap(buffer[smallest], buffer[i]);
-        i = smallest;
+        std::swap(buffer[i], buffer[j]);
+        i = j;
     }
 }
 
@@ -183,8 +195,9 @@ template<typename Type>
 Type Heap<Type>::pop() {
     if (num_of_elements == 0) return Type();
     Type result = buffer[0];
-    buffer[0] = buffer[num_of_elements-1];
-    --num_of_elements;
+    buffer[0] = buffer[num_of_elements - 1];
+    buffer[num_of_elements - 1] = Type();
+    num_of_elements--;
     siftdown(0);
     return result;
 }
@@ -268,6 +281,7 @@ CListGraph::CListGraph(size_t _num_of_vertices, bool oriented) : IGraph() {
         list[i] = new Node;
         list[i]->next = nullptr;
         list[i]->vertex = i;
+        list[i]->weight = 0;
     }
     is_oriented = oriented;
 }
@@ -350,22 +364,47 @@ CListGraph& CListGraph::operator=(CListGraph &&other) noexcept {
 void CListGraph::AddEdge(int from, int to, int w) {
     assert(from < num_of_vertices && to < num_of_vertices);
     Node* tmp = list[from];
+    bool found = false;
     while (tmp->next) {
-        if (tmp->next->vertex == to)
-            return;
+        if (tmp->next->vertex == to) {
+            if (tmp->next->weight > w)
+                tmp->next->weight = w;
+            found = true;
+        }
         tmp = tmp->next;
     }
-    tmp->next = new Node;
-    tmp = tmp->next;
-    tmp->next = nullptr;
-    tmp->vertex = to;
-    tmp->weight = w;
+    if (tmp) {
+        if (tmp->vertex == to) {
+            found = true;
+            if (tmp->weight > w) {
+                tmp->weight = w;
+            }
+        }
+    }
+    if (!found) {
+        tmp->next = new Node;
+        tmp = tmp->next;
+        tmp->next = nullptr;
+        tmp->vertex = to;
+        tmp->weight = w;
+    }
+    if (to == from)
+        return;
     if (!is_oriented) {
         tmp = list[to];
         while (tmp->next) {
-            if (tmp->next->vertex == from)
+            if (tmp->next->vertex == from) {
+                if (tmp->next->weight > w)
+                    tmp->next->weight = w;
                 return;
+            }
             tmp = tmp->next;
+        }
+        if (tmp) {
+            if (tmp->vertex == from && tmp->weight > w) {
+                tmp->weight = w;
+                return;
+            }
         }
         tmp->next = new Node;
         tmp = tmp->next;
@@ -422,34 +461,54 @@ CListGraph::~CListGraph() {
     Clear();
 }
 
+struct PairKeyEquiv {
+    PairKeyEquiv() = default;
+    bool operator () (const std::pair<int, int> &p1, const std::pair<int, int> &p2) {
+        return p1.second == p2.second;
+    }
+};
+
 int main()
 {
-    int n, v, start;
-    std::cin >> n, v;
-    CListGraph G(n, true);
+    //srand(time(0));
+    int n = 0, v = 0, start = 0, stop = 0;
+    std::cin >> n >> v;
+    //n = 10000;
+    //v = 250000;
+    //assert(n <= 10000 && v <= 250000);
+    CListGraph G(n, false);
     for (int i = 0; i < v; ++i) {
         int from, to, w;
+        //from = rand() % 10000;
+        //to = rand() % 10000;
+        //w = rand() % 10000;
         std::cin >> from >> to >> w;
+        //assert(w <= 10000);
         G.AddEdge(from, to, w);
     }
-    std::cin >> start;
+    //start = rand() % 10000;
+    //stop = rand() % 10000;
+    std::cin >> start >> stop;
     Heap<std::pair<int, int>> heap;
-    int* d = new int[n];
-    bool* used = new bool[n];
-    for (int i = 0; i < n; ++n) {
-        d[i] = INFINITY;
-        used[i] = false;
-    }
-    heap.push({start, 0});
+    std::vector<int> d(n, INT32_MAX);
+    d[start] = 0;
+    std::vector<int> used(n, false);
+    heap.push({0, start});
+    PairKeyEquiv pred;
     while(!heap.empty()) {
         auto temp_v = heap.pop();
         std::vector<std::pair<int, int>> next;
-        G.GetNextVertices(temp_v.first, next);
+        G.GetNextVertices(temp_v.second, next);
+        used[temp_v.second] = true;
         for (auto &i : next) {
-            if (d[i.first] > d[temp_v.first] + i.second && !used[i.first])
-                d[i.first] = d[temp_v.first] + i.second;
-            if (!used[i.first])
-                heap.push(i);
+            if (d[i.first] > d[temp_v.second] + i.second) {
+                d[i.first] = d[temp_v.second] + i.second;
+                if (!used[i.first]) {
+                    heap.delete_by_key({0, i.first}, pred);
+                    heap.push({d[i.first], i.first});
+                }
+            }
         }
     }
+    std::cout << d[stop];
 }
